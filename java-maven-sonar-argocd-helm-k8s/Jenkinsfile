@@ -1,0 +1,40 @@
+pipeline {
+  agent {
+    docker {
+      image 'maven:3.9.9-eclipse-temurin-17'
+    }
+  }
+
+  environment {
+    SONAR_HOST_URL = 'http://host.docker.internal:9000'
+  }
+
+  stages {
+
+    stage('Where am I') {
+      steps {
+        sh '''
+          echo "Running inside:"
+          hostname
+          whoami
+          pwd
+        '''
+      }
+    }
+
+    stage('Sonar Scan') {
+      steps {
+        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+          sh '''
+            mvn -version
+            mvn sonar:sonar \
+              -Dsonar.projectKey=cicd-demo1 \
+              -Dsonar.projectName=cicd-demo1\
+              -Dsonar.login=$SONAR_TOKEN \
+              -Dsonar.host.url=$SONAR_HOST_URL
+          '''
+        }
+      }
+    }
+  }
+} 
