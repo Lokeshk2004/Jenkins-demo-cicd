@@ -25,16 +25,18 @@ pipeline {
     stage('Sonar Scan') {
       steps {
         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-          sh '''
-            mvn -version
-            mvn sonar:sonar \
-              -Dsonar.projectKey=cicd-demo1 \
-              -Dsonar.projectName=cicd-demo1\
-              -Dsonar.login=$SONAR_TOKEN \
-              -Dsonar.host.url=$SONAR_HOST_URL
-          '''
+          dir('java-maven-sonar-argocd-helm-k8s/spring-boot-app') {
+            sh '''
+              mvn clean verify sonar:sonar \
+                -Dsonar.projectKey=cicd-demo1 \
+                -Dsonar.projectName=cicd-demo1 \
+                -Dsonar.login=$SONAR_TOKEN \
+                -Dsonar.host.url=$SONAR_HOST_URL
+            '''
+          }
         }
       }
     }
+
   }
-} 
+}
