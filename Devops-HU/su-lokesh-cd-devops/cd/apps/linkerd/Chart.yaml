@@ -1,0 +1,14 @@
+# Linkerd Service Mesh — Helm chart + AuthorizationPolicies
+apiVersion: v2
+name: linkerd
+description: Linkerd service mesh control plane
+type: application
+version: 1.0.0
+appVersion: "2.14.0"
+dependencies:
+  - name: linkerd-crds
+    version: "1.8.0"
+    repository: https://helm.linkerd.io/stable
+  - name: linkerd-control-plane
+    version: "1.16.0"
+    repository: https://helm.linkerd.io/stable

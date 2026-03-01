@@ -1,0 +1,30 @@
+linkerd-control-plane:
+  identityTrustAnchorsPEM: |
+    # Generate with: step certificate create root.linkerd.cluster.local ca.crt ca.key --profile root-ca --no-password --insecure
+    # Replace this placeholder with your actual trust anchor certificate
+    -----BEGIN CERTIFICATE-----
+    <REPLACE_WITH_TRUST_ANCHOR_CERT>
+    -----END CERTIFICATE-----
+
+  identity:
+    issuer:
+      tls:
+        crtPEM: |
+          # Replace with issuer certificate
+          -----BEGIN CERTIFICATE-----
+          <REPLACE_WITH_ISSUER_CERT>
+          -----END CERTIFICATE-----
+        keyPEM: |
+          # Replace with issuer key
+          -----BEGIN EC PRIVATE KEY-----
+          <REPLACE_WITH_ISSUER_KEY>
+          -----END EC PRIVATE KEY-----
+
+  proxy:
+    resources:
+      cpu:
+        request: 10m
+        limit: 100m
+      memory:
+        request: 20Mi
+        limit: 64Mi

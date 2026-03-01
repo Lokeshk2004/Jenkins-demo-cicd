@@ -1,0 +1,73 @@
+# Kyverno ClusterPolicy — Deny pods running as root
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-run-as-root
+  annotations:
+    policies.kyverno.io/title: Deny Running As Root
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Denies pods that run as root or do not explicitly set runAsNonRoot: true.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-run-as-non-root
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - frontend
+                - backend-users
+                - backend-products
+                - backend-orders
+      validate:
+        message: "Running as root is not allowed. Set securityContext.runAsNonRoot to true."
+        pattern:
+          spec:
+            =(initContainers):
+              - securityContext:
+                  runAsNonRoot: true
+            containers:
+              - securityContext:
+                  runAsNonRoot: true
+---
+# Kyverno ClusterPolicy — Require resource limits
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+  annotations:
+    policies.kyverno.io/title: Require Resource Limits
+    policies.kyverno.io/category: Resource Management
+    policies.kyverno.io/severity: medium
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-resource-limits
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - frontend
+                - backend-users
+                - backend-products
+                - backend-orders
+      validate:
+        message: "All containers must have resource requests and limits defined."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    cpu: "?*"
+                    memory: "?*"

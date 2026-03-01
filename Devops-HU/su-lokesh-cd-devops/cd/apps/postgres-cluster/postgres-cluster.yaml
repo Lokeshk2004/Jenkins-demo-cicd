@@ -1,0 +1,102 @@
+# PostgreSQL Cluster via Percona PG Operator
+apiVersion: pgv2.percona.com/v2
+kind: PerconaPGCluster
+metadata:
+  name: postgres-cluster
+  namespace: database
+  labels:
+    app.kubernetes.io/part-of: su-devops-lokesh26
+spec:
+  crVersion: "2.3.1"
+  image: percona/percona-postgresql-operator:2.3.1-ppg16-postgres
+  postgresVersion: 16
+  port: 5432
+
+  instances:
+    - name: instance1
+      replicas: 1
+      dataVolumeClaimSpec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+        storageClassName: gp2
+      resources:
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+
+  users:
+    - name: users_svc
+      databases:
+        - appdb
+      options: "NOSUPERUSER"
+    - name: products_svc
+      databases:
+        - appdb
+      options: "NOSUPERUSER"
+    - name: orders_svc
+      databases:
+        - appdb
+      options: "NOSUPERUSER"
+
+  databaseInitSQL:
+    name: init-sql-configmap
+    key: init.sql
+
+  proxy:
+    pgBouncer:
+      replicas: 1
+      image: percona/percona-postgresql-operator:2.3.1-ppg16-pgbouncer
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+        limits:
+          cpu: "250m"
+          memory: "256Mi"
+---
+# ConfigMap with init SQL to create tables and grant per-service privileges
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-sql-configmap
+  namespace: database
+data:
+  init.sql: |
+    -- Create tables
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        role VARCHAR(100) NOT NULL DEFAULT 'user'
+    );
+
+    CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        category VARCHAR(100) NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        product_id INTEGER NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        status VARCHAR(50) NOT NULL DEFAULT 'pending'
+    );
+
+    -- Grant table-scoped privileges
+    GRANT SELECT, INSERT, UPDATE, DELETE ON users TO users_svc;
+    GRANT USAGE, SELECT ON SEQUENCE users_id_seq TO users_svc;
+
+    GRANT SELECT, INSERT, UPDATE, DELETE ON products TO products_svc;
+    GRANT USAGE, SELECT ON SEQUENCE products_id_seq TO products_svc;
+
+    GRANT SELECT, INSERT, UPDATE, DELETE ON orders TO orders_svc;
+    GRANT USAGE, SELECT ON SEQUENCE orders_id_seq TO orders_svc;

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: keda
+description: KEDA — Kubernetes Event-Driven Autoscaler
+type: application
+version: 1.0.0
+appVersion: "2.14.0"
+dependencies:
+  - name: keda
+    version: "2.14.0"
+    repository: https://kedacore.github.io/charts

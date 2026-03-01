@@ -1,0 +1,113 @@
+# Linkerd AuthorizationPolicies — Identity-based access control
+# Only frontend SA can call backend services
+---
+apiVersion: policy.linkerd.io/v1beta2
+kind: Server
+metadata:
+  name: users-server
+  namespace: backend-users
+spec:
+  podSelector:
+    matchLabels:
+      app: users-service
+  port: 5001
+  proxyProtocol: HTTP/2
+---
+apiVersion: policy.linkerd.io/v1beta2
+kind: Server
+metadata:
+  name: products-server
+  namespace: backend-products
+spec:
+  podSelector:
+    matchLabels:
+      app: products-service
+  port: 5002
+  proxyProtocol: HTTP/2
+---
+apiVersion: policy.linkerd.io/v1beta2
+kind: Server
+metadata:
+  name: orders-server
+  namespace: backend-orders
+spec:
+  podSelector:
+    matchLabels:
+      app: orders-service
+  port: 5003
+  proxyProtocol: HTTP/2
+---
+# AuthorizationPolicy: Only frontend can reach backend-users
+apiVersion: policy.linkerd.io/v1beta2
+kind: AuthorizationPolicy
+metadata:
+  name: allow-frontend-to-users
+  namespace: backend-users
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: Server
+    name: users-server
+  requiredAuthenticationRefs:
+    - name: frontend-identity
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1beta2
+kind: MeshTLSAuthentication
+metadata:
+  name: frontend-identity
+  namespace: backend-users
+spec:
+  identities:
+    - "*.frontend.serviceaccount.identity.linkerd.cluster.local"
+---
+# AuthorizationPolicy: Only frontend can reach backend-products
+apiVersion: policy.linkerd.io/v1beta2
+kind: AuthorizationPolicy
+metadata:
+  name: allow-frontend-to-products
+  namespace: backend-products
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: Server
+    name: products-server
+  requiredAuthenticationRefs:
+    - name: frontend-identity
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1beta2
+kind: MeshTLSAuthentication
+metadata:
+  name: frontend-identity
+  namespace: backend-products
+spec:
+  identities:
+    - "*.frontend.serviceaccount.identity.linkerd.cluster.local"
+---
+# AuthorizationPolicy: Only frontend can reach backend-orders
+apiVersion: policy.linkerd.io/v1beta2
+kind: AuthorizationPolicy
+metadata:
+  name: allow-frontend-to-orders
+  namespace: backend-orders
+spec:
+  targetRef:
+    group: policy.linkerd.io
+    kind: Server
+    name: orders-server
+  requiredAuthenticationRefs:
+    - name: frontend-identity
+      kind: MeshTLSAuthentication
+      group: policy.linkerd.io
+---
+apiVersion: policy.linkerd.io/v1beta2
+kind: MeshTLSAuthentication
+metadata:
+  name: frontend-identity
+  namespace: backend-orders
+spec:
+  identities:
+    - "*.frontend.serviceaccount.identity.linkerd.cluster.local"

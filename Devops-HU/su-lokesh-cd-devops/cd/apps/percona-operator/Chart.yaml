@@ -1,0 +1,10 @@
+apiVersion: v2
+name: percona-operator
+description: Percona PostgreSQL Operator for database management
+type: application
+version: 1.0.0
+appVersion: "2.3.1"
+dependencies:
+  - name: pg-operator
+    version: "2.3.1"
+    repository: https://percona.github.io/percona-helm-charts/

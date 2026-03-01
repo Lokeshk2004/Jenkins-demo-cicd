@@ -1,0 +1,6 @@
+apiVersion: v2
+name: products-service
+description: Products CRUD Flask microservice
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

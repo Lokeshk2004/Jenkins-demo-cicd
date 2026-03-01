@@ -1,0 +1,24 @@
+# KEDA ScaledObject — Autoscale backend-users based on HTTP request rate
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: users-service-scaler
+  namespace: backend-users
+  labels:
+    app: users-service
+spec:
+  scaleTargetRef:
+    name: users-service
+  minReplicaCount: 1
+  maxReplicaCount: 4
+  cooldownPeriod: 120
+  pollingInterval: 30
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-kube-prometheus-prometheus.monitoring:9090
+        metricName: http_requests_per_second
+        query: |
+          sum(rate(http_requests_total{service="users-service"}[2m]))
+        threshold: "10"
+        activationThreshold: "5"

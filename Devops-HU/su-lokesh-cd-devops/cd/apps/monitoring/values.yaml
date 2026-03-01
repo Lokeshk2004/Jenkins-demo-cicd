@@ -1,0 +1,205 @@
+# -----------------------------------------------
+# kube-prometheus-stack (Prometheus + Grafana)
+# -----------------------------------------------
+kube-prometheus-stack:
+  fullnameOverride: prometheus
+
+  prometheus:
+    prometheusSpec:
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+      retention: 7d
+      resources:
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: gp2
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 20Gi
+
+  grafana:
+    enabled: true
+    adminPassword: "admin"  # Change in production via Sealed Secret
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClassName: gp2
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "250m"
+        memory: "256Mi"
+
+    additionalDataSources:
+      - name: Tempo
+        type: tempo
+        access: proxy
+        url: http://tempo:3100
+        jsonData:
+          tracesToLogsV2:
+            datasourceUid: loki
+            filterByTraceID: true
+          serviceMap:
+            datasourceUid: prometheus
+
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki.logging:3100
+        uid: loki
+
+    dashboardProviders:
+      dashboardproviders.yaml:
+        apiVersion: 1
+        providers:
+          - name: custom
+            orgId: 1
+            folder: "SU DevOps"
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/custom
+
+    dashboards:
+      custom:
+        api-overview:
+          json: |
+            {
+              "title": "API Overview — SU DevOps",
+              "uid": "su-api-overview",
+              "panels": [
+                {
+                  "title": "HTTP Request Rate by Service",
+                  "type": "timeseries",
+                  "targets": [{"expr": "sum(rate(http_requests_total[5m])) by (service)", "legendFormat": "{{service}}"}],
+                  "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+                },
+                {
+                  "title": "API Failure Rate (5xx)",
+                  "type": "timeseries",
+                  "targets": [{"expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) by (service)", "legendFormat": "{{service}}"}],
+                  "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+                },
+                {
+                  "title": "Response Time P50 / P95 / P99",
+                  "type": "timeseries",
+                  "targets": [
+                    {"expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service))", "legendFormat": "P50 {{service}}"},
+                    {"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service))", "legendFormat": "P95 {{service}}"},
+                    {"expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service))", "legendFormat": "P99 {{service}}"}
+                  ],
+                  "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+                },
+                {
+                  "title": "CPU Usage by Pod",
+                  "type": "timeseries",
+                  "targets": [{"expr": "sum(rate(container_cpu_usage_seconds_total{namespace=~\"frontend|backend-.*\"}[5m])) by (pod)", "legendFormat": "{{pod}}"}],
+                  "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+                },
+                {
+                  "title": "Memory Usage by Pod",
+                  "type": "timeseries",
+                  "targets": [{"expr": "sum(container_memory_working_set_bytes{namespace=~\"frontend|backend-.*\"}) by (pod)", "legendFormat": "{{pod}}"}],
+                  "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+                },
+                {
+                  "title": "Pod Restarts",
+                  "type": "stat",
+                  "targets": [{"expr": "sum(kube_pod_container_status_restarts_total{namespace=~\"frontend|backend-.*\"}) by (pod)"}],
+                  "gridPos": {"h": 6, "w": 12, "x": 0, "y": 24}
+                },
+                {
+                  "title": "Node Readiness",
+                  "type": "stat",
+                  "targets": [{"expr": "kube_node_status_condition{condition=\"Ready\",status=\"true\"}"}],
+                  "gridPos": {"h": 6, "w": 12, "x": 12, "y": 24}
+                }
+              ],
+              "time": {"from": "now-1h", "to": "now"},
+              "refresh": "30s"
+            }
+
+  # Enable kube-state-metrics and node-exporter
+  kubeStateMetrics:
+    enabled: true
+  nodeExporter:
+    enabled: true
+
+# -----------------------------------------------
+# Tempo (Distributed Tracing)
+# -----------------------------------------------
+tempo:
+  fullnameOverride: tempo
+  tempo:
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "250m"
+        memory: "512Mi"
+    storage:
+      trace:
+        backend: local
+        local:
+          path: /var/tempo/traces
+    retention: 72h
+
+# -----------------------------------------------
+# OpenTelemetry Collector
+# -----------------------------------------------
+opentelemetry-collector:
+  fullnameOverride: otel-collector
+  mode: deployment
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      batch:
+        timeout: 5s
+        send_batch_size: 1024
+
+    exporters:
+      otlp/tempo:
+        endpoint: tempo:4317
+        tls:
+          insecure: true
+      prometheus:
+        endpoint: 0.0.0.0:8889
+        namespace: otel
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlp/tempo]
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [prometheus]

@@ -1,0 +1,58 @@
+replicaCount: 2
+
+image:
+  repository: gcr.io/GCP_PROJECT_ID/su-devops-lokesh26-frontend
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5000
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
+
+env:
+  SERVICE_PORT: "5000"
+  USERS_SERVICE_URL: "http://users-svc.backend-users:5001"
+  PRODUCTS_SERVICE_URL: "http://products-svc.backend-products:5002"
+  ORDERS_SERVICE_URL: "http://orders-svc.backend-orders:5003"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.monitoring:4317"
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  readOnlyRootFilesystem: true
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  interval: 30s
+
+podAnnotations:
+  linkerd.io/inject: enabled

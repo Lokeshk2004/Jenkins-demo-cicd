@@ -1,0 +1,65 @@
+replicaCount: 2
+
+image:
+  repository: gcr.io/GCP_PROJECT_ID/su-devops-lokesh26-products-service
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5002
+  name: products-svc
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "250m"
+    memory: "256Mi"
+
+env:
+  SERVICE_PORT: "5002"
+  DB_HOST: "postgres-cluster.database"
+  DB_PORT: "5432"
+  DB_NAME: "appdb"
+  DB_USER: "products_svc"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.monitoring:4317"
+
+envFromSecret:
+  DB_PASSWORD:
+    secretName: products-db-credentials
+    key: password
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  readOnlyRootFilesystem: true
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5002
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5002
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  interval: 30s
+
+podAnnotations:
+  linkerd.io/inject: enabled

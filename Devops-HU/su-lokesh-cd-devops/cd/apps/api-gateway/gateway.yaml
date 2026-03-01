@@ -1,0 +1,162 @@
+# Kong Gateway API — GatewayClass, Gateway, HTTPRoutes, ReferenceGrants
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kong
+spec:
+  controllerName: konghq.com/kic-gateway-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: su-devops-gateway
+  namespace: api-gateway
+  annotations:
+    konghq.com/gateway-unmanaged: "true"
+spec:
+  gatewayClassName: kong
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+# HTTPRoute: / → frontend:5000
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: frontend-route
+  namespace: api-gateway
+spec:
+  parentRefs:
+    - name: su-devops-gateway
+      namespace: api-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: frontend-svc
+          namespace: frontend
+          port: 5000
+---
+# HTTPRoute: /api/users → users-svc:5001
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: users-route
+  namespace: api-gateway
+spec:
+  parentRefs:
+    - name: su-devops-gateway
+      namespace: api-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/users
+      backendRefs:
+        - name: users-svc
+          namespace: backend-users
+          port: 5001
+---
+# HTTPRoute: /api/products → products-svc:5002
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: products-route
+  namespace: api-gateway
+spec:
+  parentRefs:
+    - name: su-devops-gateway
+      namespace: api-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/products
+      backendRefs:
+        - name: products-svc
+          namespace: backend-products
+          port: 5002
+---
+# HTTPRoute: /api/orders → orders-svc:5003
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: orders-route
+  namespace: api-gateway
+spec:
+  parentRefs:
+    - name: su-devops-gateway
+      namespace: api-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api/orders
+      backendRefs:
+        - name: orders-svc
+          namespace: backend-orders
+          port: 5003
+---
+# ReferenceGrants — allow api-gateway namespace to reference services in other namespaces
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-api-gateway-to-frontend
+  namespace: frontend
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: api-gateway
+  to:
+    - group: ""
+      kind: Service
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-api-gateway-to-users
+  namespace: backend-users
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: api-gateway
+  to:
+    - group: ""
+      kind: Service
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-api-gateway-to-products
+  namespace: backend-products
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: api-gateway
+  to:
+    - group: ""
+      kind: Service
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-api-gateway-to-orders
+  namespace: backend-orders
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: api-gateway
+  to:
+    - group: ""
+      kind: Service

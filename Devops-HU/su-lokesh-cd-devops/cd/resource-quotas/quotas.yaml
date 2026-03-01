@@ -1,0 +1,243 @@
+# -----------------------------------------------
+# ResourceQuota + LimitRange per namespace
+# -----------------------------------------------
+
+# Frontend
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: frontend-quota
+  namespace: frontend
+spec:
+  hard:
+    requests.cpu: "500m"
+    requests.memory: "512Mi"
+    limits.cpu: "1"
+    limits.memory: "1Gi"
+    pods: "10"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: frontend-limits
+  namespace: frontend
+spec:
+  limits:
+    - default:
+        cpu: "250m"
+        memory: "256Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      type: Container
+
+# Backend Users
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: backend-users-quota
+  namespace: backend-users
+spec:
+  hard:
+    requests.cpu: "500m"
+    requests.memory: "512Mi"
+    limits.cpu: "1"
+    limits.memory: "1Gi"
+    pods: "10"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: backend-users-limits
+  namespace: backend-users
+spec:
+  limits:
+    - default:
+        cpu: "250m"
+        memory: "256Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      type: Container
+
+# Backend Products
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: backend-products-quota
+  namespace: backend-products
+spec:
+  hard:
+    requests.cpu: "500m"
+    requests.memory: "512Mi"
+    limits.cpu: "1"
+    limits.memory: "1Gi"
+    pods: "10"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: backend-products-limits
+  namespace: backend-products
+spec:
+  limits:
+    - default:
+        cpu: "250m"
+        memory: "256Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      type: Container
+
+# Backend Orders
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: backend-orders-quota
+  namespace: backend-orders
+spec:
+  hard:
+    requests.cpu: "500m"
+    requests.memory: "512Mi"
+    limits.cpu: "1"
+    limits.memory: "1Gi"
+    pods: "10"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: backend-orders-limits
+  namespace: backend-orders
+spec:
+  limits:
+    - default:
+        cpu: "250m"
+        memory: "256Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      type: Container
+
+# Database
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: database-quota
+  namespace: database
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: "1Gi"
+    limits.cpu: "2"
+    limits.memory: "2Gi"
+    pods: "10"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: database-limits
+  namespace: database
+spec:
+  limits:
+    - default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "250m"
+        memory: "256Mi"
+      type: Container
+
+# Monitoring (higher quotas)
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: monitoring-quota
+  namespace: monitoring
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: "4Gi"
+    limits.cpu: "4"
+    limits.memory: "8Gi"
+    pods: "20"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: monitoring-limits
+  namespace: monitoring
+spec:
+  limits:
+    - default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "256Mi"
+      type: Container
+
+# Logging (higher quotas)
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: logging-quota
+  namespace: logging
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: "2Gi"
+    limits.cpu: "2"
+    limits.memory: "4Gi"
+    pods: "15"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: logging-limits
+  namespace: logging
+spec:
+  limits:
+    - default:
+        cpu: "250m"
+        memory: "256Mi"
+      defaultRequest:
+        cpu: "50m"
+        memory: "128Mi"
+      type: Container
+
+# ArgoCD (higher quotas)
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: argocd-quota
+  namespace: argocd
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: "2Gi"
+    limits.cpu: "2"
+    limits.memory: "4Gi"
+    pods: "15"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: argocd-limits
+  namespace: argocd
+spec:
+  limits:
+    - default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "256Mi"
+      type: Container
